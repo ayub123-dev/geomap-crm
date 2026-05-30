@@ -202,15 +202,32 @@
         </div>
     </div>
     
-    <script src="/service-worker-init.js"></script>
-    <script src="js/auth.js"></script>
     <script>
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(registration => console.log('Service Worker registered'))
-                .catch(error => console.log('Service Worker registration failed:', error));
-        }
+        // Compute app base (path before /modules/) so PWA assets load correctly when app is hosted under a subpath
+        (function () {
+            const pathBeforeModules = window.location.pathname.split('/modules/')[0];
+            const base = (pathBeforeModules && pathBeforeModules !== '/') ? pathBeforeModules : '';
+
+            // Add manifest link pointing to app root
+            const manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = base + '/manifest.json';
+            document.head.appendChild(manifestLink);
+
+            // Load service-worker-init.js from app root if available
+            const swInit = document.createElement('script');
+            swInit.src = base + '/service-worker-init.js';
+            swInit.async = true;
+            document.head.appendChild(swInit);
+
+            // Register service worker from app root
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register(base + '/service-worker.js')
+                    .then(registration => console.log('Service Worker registered'))
+                    .catch(error => console.log('Service Worker registration failed:', error));
+            }
+        })();
     </script>
+    <script src="js/auth.js"></script>
 </body>
 </html>
