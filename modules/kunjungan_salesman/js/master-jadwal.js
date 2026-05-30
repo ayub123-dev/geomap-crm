@@ -5,12 +5,20 @@
 
 class MasterJadwalManager {
     constructor() {
-        this.apiBaseUrl = '/api';
+        // Use auth module's apiBaseUrl so module works under subpaths (e.g. /geomap-crm)
+        this.apiBaseUrl = (typeof auth !== 'undefined' && auth.apiBaseUrl) ? auth.apiBaseUrl : '/api';
         this.currentDay = 'Senin';
         this.schedules = {};
         this.salesmans = [];
         this.customers = [];
         this.modal = null;
+
+        // optional debug logs (guarded)
+        if (typeof auth !== 'undefined') {
+            console.log(auth.getUser && auth.getUser());
+            console.log(auth.hasRole && auth.hasRole('supervisor'));
+            console.log(auth.hasRole && auth.hasRole('admin'));
+        }
     }
 
     /**
@@ -18,13 +26,21 @@ class MasterJadwalManager {
      */
     init() {
         // Check auth - hanya admin dan supervisor
-        if (!['admin', 'supervisor'].includes(auth.getUser().role)) {
+        if (!(auth.hasRole('admin') || auth.hasRole('supervisor'))) {
             showAlert('Akses ditolak. Hanya admin dan supervisor yang bisa mengakses halaman ini.', 'danger');
             setTimeout(() => window.history.back(), 2000);
             return;
         }
 
-        this.modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+        const modalElement = document.getElementById('scheduleModal');
+
+        if (!modalElement) {
+            console.error('scheduleModal tidak ditemukan');
+            showAlert('Modal jadwal tidak ditemukan', 'danger');
+            return;
+        }
+
+        this.modal = new bootstrap.Modal(modalElement);
         this.setupEventListeners();
         this.loadData();
     }
@@ -41,14 +57,23 @@ class MasterJadwalManager {
         });
 
         // Add schedule button
-        document.getElementById('btnAddSchedule').addEventListener('click', () => {
-            this.showAddScheduleModal();
-        });
+        // Add schedule button intentionally removed from UI; do not log missing element
+        const btnAdd = document.getElementById('btnAddSchedule');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => {
+                this.showAddScheduleModal();
+            });
+        }
 
         // Save schedule button
-        document.getElementById('btnSaveSchedule').addEventListener('click', () => {
-            this.saveSchedule();
-        });
+        const btnSave = document.getElementById('btnSaveSchedule');
+        if (btnSave) {
+            btnSave.addEventListener('click', () => {
+                this.saveSchedule();
+            });
+        } else {
+            console.error('btnSaveSchedule tidak ditemukan');
+        }
 
         // Frequency radio buttons
         document.querySelectorAll('input[name="frequency"]').forEach(radio => {
@@ -75,15 +100,23 @@ class MasterJadwalManager {
                 this.populateSalesmanSelect();
             }
 
-            // Load customers
-            const customersResponse = await auth.fetch(
-                this.apiBaseUrl + '/customers.php'
-            );
-            const customersData = await customersResponse.json();
+            // Customers will be loaded per-salesman when a salesman is selected. Initial customer list remains empty until a salesman is chosen.
+            this.customers = [];
+            this.populateCustomerSelect();
 
-            if (customersData.success) {
-                this.customers = customersData.data || [];
-                this.populateCustomerSelect();
+            // When salesman selection changes, load customers for that salesman's database
+            const formSalesmanEl = document.getElementById('formSalesman');
+            if (formSalesmanEl) {
+                formSalesmanEl.addEventListener('change', (e) => {
+                    const sid = e.target.value;
+                    if (sid) {
+                        this.loadCustomersForSalesman(parseInt(sid, 10));
+                    } else {
+                        // reset to empty
+                        this.customers = [];
+                        this.populateCustomerSelect();
+                    }
+                });
             }
 
             // Load all schedules
@@ -125,9 +158,18 @@ class MasterJadwalManager {
      */
     populateSalesmanSelect() {
         const select = document.getElementById('formSalesman');
-        const html = this.salesmans.map(s => `
-            <option value="${s.id}">${s.name}</option>
-        `).join('');
+        const html = this.salesmans.map(s => {
+            let label = s.nama || s.name || 'Salesman ' + s.id;
+            // Add user name if available
+            if (s.user_name) {
+                label += ` (${s.user_name})`;
+            }
+            // Add phone if available
+            if (s.no_hp) {
+                label += ` - ${s.no_hp}`;
+            }
+            return `<option value="${s.id}">${label}</option>`;
+        }).join('');
 
         select.innerHTML = '<option value="">-- Pilih Salesman --</option>' + html;
     }
@@ -137,11 +179,51 @@ class MasterJadwalManager {
      */
     populateCustomerSelect() {
         const select = document.getElementById('formCustomer');
-        const html = this.customers.map(c => `
-            <option value="${c.id}">${c.name}</option>
+        const html = (this.customers || []).map(c => `
+            <option value="${c.id}">${c.nama_toko || c.name || c.kode_customer || 'Customer ' + c.id}</option>
         `).join('');
 
         select.innerHTML = '<option value="">-- Pilih Pelanggan --</option>' + html;
+    }
+
+    /**
+     * Load customers from the salesman's database (if defined) or default DB     */
+    async loadCustomersForSalesman(salesmanId) {
+        try {
+            const salesman = this.salesmans.find(s => String(s.id) === String(salesmanId));
+            let databaseAlias = '';
+            if (salesman && salesman.profile_json) {
+                try {
+                    const decoded = typeof salesman.profile_json === 'string' ? JSON.parse(salesman.profile_json) : salesman.profile_json;
+                    databaseAlias = decoded && decoded.database_alias ? decoded.database_alias : '';
+                } catch (e) {
+                    console.warn('Invalid profile_json for salesman', e);
+                }
+            }
+
+            const url = this.apiBaseUrl + '/customers.php' + (databaseAlias ? '?database_alias=' + encodeURIComponent(databaseAlias) : '');
+            const resp = await auth.fetch(url);
+            if (!resp.ok) {
+                // try plain json parse to show error
+                let txt = await resp.text();
+                try { txt = JSON.parse(txt); } catch (e) { /* keep raw text */ }
+                throw new Error('Failed to load customers: ' + (resp.status + ' ' + resp.statusText));
+            }
+
+            const data = await resp.json();
+            if (data.success) {
+                this.customers = data.data || [];
+                this.populateCustomerSelect();
+            } else {
+                console.warn('Customers API returned failure', data.message);
+                this.customers = [];
+                this.populateCustomerSelect();
+            }
+        } catch (err) {
+            console.error('Error loading customers for salesman:', err);
+            this.customers = [];
+            this.populateCustomerSelect();
+        }
     }
 
     /**
@@ -214,11 +296,35 @@ class MasterJadwalManager {
      * Show add schedule modal
      */
     showAddScheduleModal() {
-        document.getElementById('modalTitle').textContent = 'Tambah Jadwal';
-        document.getElementById('scheduleForm').reset();
-        document.getElementById('formDay').value = this.currentDay;
-        document.getElementById('weekGroup').style.display = 'none';
-        document.getElementById('freqEveryWeek').checked = true;
+        if (!this.modal) {
+            console.error('Bootstrap modal belum terinisialisasi');
+            showAlert('Modal belum tersedia', 'danger');
+            return;
+        }
+
+        const modalTitle = document.getElementById('modalTitle');
+        const scheduleForm = document.getElementById('scheduleForm');
+        const formDay = document.getElementById('formDay');
+        const weekGroup = document.getElementById('weekGroup');
+        const freqEveryWeek = document.getElementById('freqEveryWeek');
+
+        if (!modalTitle || !scheduleForm || !formDay) {
+            console.error('Komponen modal tidak ditemukan');
+            showAlert('Komponen form jadwal tidak lengkap', 'danger');
+            return;
+        }
+
+        modalTitle.textContent = 'Tambah Jadwal';
+        scheduleForm.reset();
+        formDay.value = this.currentDay;
+
+        if (weekGroup) {
+            weekGroup.style.display = 'none';
+        }
+
+        if (freqEveryWeek) {
+            freqEveryWeek.checked = true;
+        }
 
         this.modal.show();
     }
@@ -352,16 +458,43 @@ class MasterJadwalManager {
     }
 }
 
-// Global instance
+/// Global instance
 let jadwalManager = null;
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    if (!auth.isLoggedIn()) {
-        window.location.href = 'login.html';
-        return;
+window.addEventListener('DOMContentLoaded', () => {
+
+    try {
+
+        if (typeof auth === 'undefined') {
+            console.error('auth.js belum termuat');
+            alert('auth.js belum termuat');
+            return;
+        }
+
+        if (!auth.isLoggedIn()) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        jadwalManager = new MasterJadwalManager();
+
+        console.log('User:', auth.getUser());
+        console.log('Role Admin:', auth.hasRole('admin'));
+        console.log('Role Supervisor:', auth.hasRole('supervisor'));
+
+        jadwalManager.init();
+
+        console.log('Master Jadwal berhasil diinisialisasi');
+
+    } catch (err) {
+
+        console.error('Init Master Jadwal Error:', err);
+
+        alert(
+            'Terjadi error saat membuka Master Jadwal.\n\n' +
+            err.message
+        );
+
     }
 
-    jadwalManager = new MasterJadwalManager();
-    jadwalManager.init();
 });

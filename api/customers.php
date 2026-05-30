@@ -5,12 +5,27 @@ require_once __DIR__ . DIRECTORY_SEPARATOR . 'bootstrap.php';
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Rbac;
+use App\Core\Database;
 use App\Services\CustomerService;
 
-$service = new CustomerService();
 $method = Request::method();
 
+// Optionally allow callers to request customers from a specific configured DB alias
+$databaseAlias = trim((string) Request::query('database_alias', ''));
+$switched = false;
 try {
+    if ($databaseAlias !== '') {
+        // ensure alias exists
+        if (!Database::hasConnection($databaseAlias)) {
+            Response::json(array('success' => false, 'message' => 'Unknown database_alias provided'), 400);
+            exit;
+        }
+        Database::switchConnection($databaseAlias);
+        $switched = true;
+    }
+
+    $service = new CustomerService();
+
     if ($method === 'GET') {
         Rbac::authorize('customer_inti.view');
         $search = (string) Request::query('search', '');
@@ -74,4 +89,9 @@ try {
         ),
         api_exception_status($exception, 500)
     );
+} finally {
+    // restore default connection if switched
+    if ($switched) {
+        Database::switchConnection();
+    }
 }
