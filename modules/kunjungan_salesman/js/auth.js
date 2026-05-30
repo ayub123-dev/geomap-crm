@@ -7,7 +7,10 @@ class Auth {
     constructor() {
         this.tokenKey = 'token';
         this.userKey = 'user';
-        this.apiBaseUrl = '/api';
+        // Determine API base relative to project root so module works under subpath (e.g. /geomap-crm)
+        // If URL contains '/modules/', use the part before it as the app base.
+        const pathBeforeModules = window.location.pathname.split('/modules/')[0];
+        this.apiBaseUrl = (pathBeforeModules && pathBeforeModules !== '/' ? pathBeforeModules : '') + '/api';
     }
 
     /**
