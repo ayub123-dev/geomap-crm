@@ -1,0 +1,65 @@
+{
+  "module": "kunjungan_salesman",
+  "generated_at": "2026-05-30T21:13:47+07:00",
+  "internal_files": {
+    "frontend": [
+      "modules/kunjungan_salesman/login.html",
+      "modules/kunjungan_salesman/dashboard.html",
+      "modules/kunjungan_salesman/checkin.html",
+      "modules/kunjungan_salesman/master-jadwal.html",
+      "modules/kunjungan_salesman/js/auth.js",
+      "modules/kunjungan_salesman/js/kunjungan.js",
+      "modules/kunjungan_salesman/js/checkin.js",
+      "modules/kunjungan_salesman/js/master-jadwal.js",
+      "modules/kunjungan_salesman/css/kunjungan.css"
+    ],
+    "api": [
+      "api/access_setup.php",
+      "api/salesman_targets.php",
+      "api/visit_checkin.php",
+      "api/visit_upload_photo.php",
+      "api/visit_set_prospek.php",
+      "api/jadwal_kunjungan.php",
+      "api/prospek.php"
+    ],
+    "backend_services": [
+      "app/Repositories/KunjunganRepository.php",
+      "app/Repositories/JadwalKunjunganRepository.php",
+      "app/Repositories/ProspekRepository.php",
+      "app/Services/KunjunganService.php",
+      "app/Services/ProspekService.php"
+    ],
+    "migrations": [
+      "migrations/mysql/003_kunjungan_module.sql",
+      "migrations/sqlserver/004_kunjungan_module.sql",
+      "migrations/sqlsrv/002_kunjungan_module.sql"
+    ],
+    "pwa": [
+      "service-worker.js",
+      "service-worker-init.js",
+      "manifest.json"
+    ]
+  },
+  "external_dependencies": {
+    "frontend_libraries": [
+      "Bootstrap 5 (cdn)",
+      "jQuery 3.7",
+      "Leaflet",
+      "leaflet.markercluster",
+      "leaflet.awesome-markers",
+      "Bootstrap Icons"
+    ],
+    "php_extensions": [
+      "pdo",
+      "pdo_mysql",
+      "mbstring",
+      "json"
+    ],
+    "database": "MySQL (recommended) or SQL Server. See migrations/ for SQL files."
+  },
+  "useful_commands": {
+    "apply_migration_mysql": "mysql -u root -p geomap_crm < migrations/mysql/003_kunjungan_module.sql",
+    "run_php_server": "(use XAMPP/Apache) or php -S localhost:8000 -t public"
+  },
+  "notes": "Jika terjadi error 'Unexpected token <' periksa URL API (404 HTML response) dan pastikan manifest/service-worker tersedia di app base."
+}
