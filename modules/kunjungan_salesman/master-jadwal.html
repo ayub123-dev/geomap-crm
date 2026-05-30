@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#6f42c1">
+    <meta name="description" content="Master Jadwal Kunjungan - GeoMap CRM">
+    
+    <title>Master Jadwal - GeoMap Kunjungan Salesman</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/x-icon" href="/assets/img/favicon.ico">
+    <link rel="apple-touch-icon" href="/assets/img/pwa-icon-192.png">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/kunjungan.css">
+    
+    <style>
+        .navbar-custom {
+            background: #6f42c1;
+        }
+        
+        .tabs-container {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .day-tab {
+            padding: 10px 8px;
+            text-align: center;
+            border-radius: 6px;
+            border: 2px solid #ddd;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            color: #666;
+        }
+        
+        .day-tab:hover {
+            border-color: #6f42c1;
+        }
+        
+        .day-tab.active {
+            background: #6f42c1;
+            color: white;
+            border-color: #6f42c1;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            margin-bottom: 15px;
+        }
+        
+        .card-header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            padding: 15px;
+        }
+        
+        .card-title {
+            font-weight: 700;
+            font-size: 16px;
+            margin: 0;
+        }
+        
+        .schedule-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            gap: 12px;
+        }
+        
+        .schedule-item:last-child {
+            border-bottom: none;
+        }
+        
+        .schedule-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .schedule-info {
+            flex: 1;
+        }
+        
+        .customer-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .customer-salesman {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .schedule-frequency {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .freq-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .freq-weekly {
+            background: #e3f2fd;
+            color: #0066cc;
+        }
+        
+        .freq-specific {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .schedule-actions {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .btn-action {
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-edit {
+            background: #0066cc;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #004ba3;
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        
+        .btn-add {
+            background: #6f42c1;
+            color: white;
+            padding: 10px 20px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .btn-add:hover {
+            background: #5a32a3;
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        /* Modal Styles */
+        .modal-content {
+            border-radius: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .form-control, .form-select {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #6f42c1;
+            box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.1);
+        }
+        
+        .week-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .week-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .week-checkbox input[type="checkbox"] {
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .tabs-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .schedule-item {
+                flex-wrap: wrap;
+            }
+            
+            .schedule-actions {
+                width: 100%;
+                margin-top: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark navbar-custom sticky-top">
+        <div class="container-fluid">
+            <button class="btn btn-link text-white" onclick="window.history.back()">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <span class="navbar-brand">Master Jadwal Kunjungan</span>
+            <div style="width: 40px;"></div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="container-fluid p-3 pb-20">
+        <!-- Day Tabs -->
+        <div class="tabs-container">
+            <div class="day-tab active" data-day="Senin">Senin</div>
+            <div class="day-tab" data-day="Selasa">Selasa</div>
+            <div class="day-tab" data-day="Rabu">Rabu</div>
+            <div class="day-tab" data-day="Kamis">Kamis</div>
+            <div class="day-tab" data-day="Jumat">Jumat</div>
+            <div class="day-tab" data-day="Sabtu">Sabtu</div>
+            <div class="day-tab" data-day="Minggu">Minggu</div>
+        </div>
+        
+        <!-- Add Schedule Button -->
+        <button class="btn btn-add" id="btnAddSchedule">
+            <i class="bi bi-plus-circle"></i> Tambah Jadwal
+        </button>
+        
+        <!-- Schedule List -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title" id="dayTitle">Jadwal Senin</h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="scheduleList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Schedule Modal -->
+    <div class="modal fade" id="scheduleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Tambah Jadwal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="scheduleForm">
+                        <div class="form-group">
+                            <label for="formSalesman" class="form-label">Salesman <span class="text-danger">*</span></label>
+                            <select class="form-select" id="formSalesman" required>
+                                <option value="">-- Pilih Salesman --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formCustomer" class="form-label">Pelanggan <span class="text-danger">*</span></label>
+                            <select class="form-select" id="formCustomer" required>
+                                <option value="">-- Pilih Pelanggan --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="formDay" class="form-label">Hari <span class="text-danger">*</span></label>
+                            <select class="form-select" id="formDay" required>
+                                <option value="">-- Pilih Hari --</option>
+                                <option value="Senin">Senin</option>
+                                <option value="Selasa">Selasa</option>
+                                <option value="Rabu">Rabu</option>
+                                <option value="Kamis">Kamis</option>
+                                <option value="Jumat">Jumat</option>
+                                <option value="Sabtu">Sabtu</option>
+                                <option value="Minggu">Minggu</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Frekuensi</label>
+                            <div class="week-selector">
+                                <div class="week-checkbox">
+                                    <input type="radio" id="freqEveryWeek" name="frequency" value="0" checked>
+                                    <label for="freqEveryWeek" style="margin-bottom: 0;">Setiap Minggu</label>
+                                </div>
+                                <div class="week-checkbox">
+                                    <input type="radio" id="freqSpecific" name="frequency" value="1">
+                                    <label for="freqSpecific" style="margin-bottom: 0;">Minggu Tertentu</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" id="weekGroup" style="display: none;">
+                            <label class="form-label">Pilih Minggu</label>
+                            <div class="week-selector">
+                                <div class="week-checkbox">
+                                    <input type="checkbox" id="week1" value="1" name="minggu">
+                                    <label for="week1" style="margin-bottom: 0;">Minggu 1</label>
+                                </div>
+                                <div class="week-checkbox">
+                                    <input type="checkbox" id="week2" value="2" name="minggu">
+                                    <label for="week2" style="margin-bottom: 0;">Minggu 2</label>
+                                </div>
+                                <div class="week-checkbox">
+                                    <input type="checkbox" id="week3" value="3" name="minggu">
+                                    <label for="week3" style="margin-bottom: 0;">Minggu 3</label>
+                                </div>
+                                <div class="week-checkbox">
+                                    <input type="checkbox" id="week4" value="4" name="minggu">
+                                    <label for="week4" style="margin-bottom: 0;">Minggu 4</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="btnSaveSchedule">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/master-jadwal.js"></script>
+</body>
+</html>

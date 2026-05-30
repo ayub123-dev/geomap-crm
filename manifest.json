@@ -1,0 +1,73 @@
+{
+  "name": "GeoMap CRM - Kunjungan Salesman",
+  "short_name": "GeoMap Kunjungan",
+  "description": "Mobile PWA untuk tracking kunjungan salesman dengan GPS dan offline support",
+  "start_url": "/modules/kunjungan_salesman/dashboard.html",
+  "scope": "/modules/kunjungan_salesman/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#0066cc",
+  "categories": ["business", "sales"],
+  "icons": [
+    {
+      "src": "/assets/img/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/pwa-icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/assets/img/screenshot-mobile-1.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/assets/img/screenshot-tablet-1.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Check-In Kunjungan",
+      "short_name": "Check-In",
+      "description": "Mulai check-in kunjungan salesman",
+      "url": "/modules/kunjungan_salesman/checkin.html",
+      "icons": [
+        {
+          "src": "/assets/img/checkin-icon.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Lihat target dan status kunjungan",
+      "url": "/modules/kunjungan_salesman/dashboard.html",
+      "icons": [
+        {
+          "src": "/assets/img/dashboard-icon.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
+}
